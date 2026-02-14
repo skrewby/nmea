@@ -25,3 +25,16 @@ option(NMEA_BUILD_EXAMPLES "Build examples" ON)
 if(NMEA_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
+
+option(NMEA_BUILD_TESTS "Build tests" ON)
+if(NMEA_BUILD_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest
+        GIT_TAG v1.17.0
+    )
+    FetchContent_MakeAvailable(googletest)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
