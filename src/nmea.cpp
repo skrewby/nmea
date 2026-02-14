@@ -10,36 +10,10 @@
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include <utility>
 
 namespace nmea {
 
-Listener::~Listener() {
-    if (m_socketfd) {
-        close(*m_socketfd);
-    }
-}
-
-Listener::Listener(Listener &&other) noexcept
-    : m_socketfd(std::exchange(other.m_socketfd, std::nullopt)) {}
-
-Listener &Listener::operator=(Listener &&other) noexcept {
-    if (this != &other) {
-        if (m_socketfd) {
-            close(*m_socketfd);
-        }
-        m_socketfd = std::exchange(other.m_socketfd, std::nullopt);
-    }
-
-    return *this;
-}
-
-std::expected<void, std::string> Listener::connect(std::string_view interface) {
-    if (m_socketfd) {
-        close(*m_socketfd);
-        m_socketfd = std::nullopt;
-    }
-
+std::expected<connection_t, std::string> connect(std::string_view interface) {
     int sockfd = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (sockfd == -1) {
         return std::unexpected("Error while opening socket");
@@ -65,17 +39,24 @@ std::expected<void, std::string> Listener::connect(std::string_view interface) {
     }
 
     guard.release();
-    m_socketfd = sockfd;
-    return {};
+    return sockfd;
+}
+
+Listener::Listener(connection_t conn) : m_conn(conn) {}
+
+Listener::Listener(Listener &&other) noexcept : m_conn(other.m_conn) {}
+
+Listener &Listener::operator=(Listener &&other) noexcept {
+    if (this != &other) {
+        m_conn = other.m_conn;
+    }
+
+    return *this;
 }
 
 std::expected<std::string, std::string> Listener::read() {
-    if (!m_socketfd) {
-        return std::unexpected("Not connected");
-    }
-
     can_frame frame{};
-    auto nbytes = ::read(*m_socketfd, &frame, sizeof(frame));
+    auto nbytes = ::read(m_conn, &frame, sizeof(frame));
     if (nbytes < 0) {
         return std::unexpected("Unable to read from socket");
     }

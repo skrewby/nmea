@@ -1,30 +1,30 @@
 #pragma once
 
 #include <expected>
-#include <optional>
 #include <string>
 #include <string_view>
 
 namespace nmea {
 
+using connection_t = int;
+
+std::expected<connection_t, std::string> connect(std::string_view interface);
+
 class Listener {
 public:
-    Listener() = default;
-    ~Listener();
+    explicit Listener(connection_t conn);
+    Listener() = delete;
+    ~Listener() = default;
 
     Listener(const Listener &other) = delete;
     Listener &operator=(const Listener &other) = delete;
     Listener(Listener &&other) noexcept;
     Listener &operator=(Listener &&other) noexcept;
 
-    std::expected<void, std::string> connect(std::string_view interface);
-
     std::expected<std::string, std::string> read();
 
-    std::optional<int> socketfd() const { return m_socketfd; }
-
 private:
-    std::optional<int> m_socketfd;
+    connection_t m_conn;
 };
 
 } // namespace nmea

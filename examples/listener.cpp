@@ -11,14 +11,14 @@ int main(int argc, const char **argv) {
         return EXIT_FAILURE;
     }
 
-    nmea::Listener listener;
-    auto res = listener.connect(argv[1]);
-    if (!res) {
-        std::println("Error on connection: {}", res.error());
+    auto conn = nmea::connect(argv[1]);
+    if (!conn) {
+        std::println("Error on connection: {}", conn.error());
         return EXIT_FAILURE;
     }
 
-    pollfd pollfd{.fd = *listener.socketfd(), .events = POLLIN, .revents = {}};
+    nmea::Listener listener(*conn);
+    pollfd pollfd{.fd = *conn, .events = POLLIN, .revents = {}};
     while (true) {
         auto events_num = poll(&pollfd, 1, POLL_TIMEOUT);
 
