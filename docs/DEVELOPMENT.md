@@ -37,3 +37,9 @@ In another, send CAN frames with
 ```sh
 cansend vcan0 123#DEADBEEF
 ```
+
+## NMEA Message Information
+
+[NMEA2000 message field parameters](https://web.nmea.org/External/WCPages/WCWebContent/webcontentpage.aspx?ContentID=189)
+
+[NMEA2000 reference](https://canboat.github.io/canboat/canboat.html)

@@ -1,7 +1,6 @@
 #include "nmea/nmea.hpp"
 #include "utils.hpp"
 
-#include <format>
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -10,6 +9,7 @@
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
+#include <utility>
 
 namespace nmea {
 
@@ -44,17 +44,26 @@ std::expected<connection_t, std::string> connect(std::string_view interface) {
 
 Listener::Listener(connection_t conn) : m_conn(conn) {}
 
-Listener::Listener(Listener &&other) noexcept : m_conn(other.m_conn) {}
+Listener::~Listener() {
+    if (m_conn != -1) {
+        close(m_conn);
+    }
+}
+
+Listener::Listener(Listener &&other) noexcept : m_conn(std::exchange(other.m_conn, -1)) {}
 
 Listener &Listener::operator=(Listener &&other) noexcept {
     if (this != &other) {
-        m_conn = other.m_conn;
+        if (m_conn != -1) {
+            close(m_conn);
+        }
+        m_conn = std::exchange(other.m_conn, -1);
     }
 
     return *this;
 }
 
-std::expected<std::string, std::string> Listener::read() {
+std::expected<NmeaMessage, std::string> Listener::read() {
     can_frame frame{};
     auto nbytes = ::read(m_conn, &frame, sizeof(frame));
     if (nbytes < 0) {
@@ -64,12 +73,6 @@ std::expected<std::string, std::string> Listener::read() {
         return std::unexpected("Incomplete CAN frame");
     }
 
-    auto result = std::format("{:03X}#", frame.can_id & CAN_EFF_MASK);
-    for (int i = 0; i < frame.can_dlc; ++i) {
-        std::format_to(std::back_inserter(result), "{:02X}", frame.data[i]);
-    }
-
-    return result;
+    return parse(frame.can_id, frame.data);
 }
-
 } // namespace nmea

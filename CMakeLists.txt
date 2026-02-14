@@ -7,6 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set (LIBRARY_SOURCES
     src/nmea.cpp
+    src/message.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${LIBRARY_SOURCES})
