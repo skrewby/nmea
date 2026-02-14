@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set (LIBRARY_SOURCES
-    src/nmea.cpp
+    src/connection.cpp
+    src/listener.cpp
     src/message.cpp
 )
 
