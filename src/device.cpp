@@ -1,4 +1,5 @@
 #include "nmea/device.hpp"
+#include "nmea/message.hpp"
 #include <chrono>
 #include <cstdint>
 #include <future>
@@ -167,13 +168,19 @@ std::expected<void, std::string> Device::send(const NmeaMessage &msg, uint8_t pr
     }
     auto serialized = serialize(msg);
     can_frame frame{};
-    frame.can_id = CAN_EFF_FLAG | (priority << 26) | (serialized.pgn << 8) | *m_address;
+    frame.can_id = CAN_EFF_FLAG | (static_cast<uint32_t>(priority) << 26) | (serialized.pgn << 8) |
+                   static_cast<uint32_t>(*m_address);
     frame.can_dlc = 8;
     std::copy(serialized.data.begin(), serialized.data.end(), frame.data);
     if (::write(m_conn, &frame, sizeof(frame)) < 0) {
         return std::unexpected("Failed to send message");
     }
     return {};
+}
+
+std::expected<void, std::string> Device::send(const NmeaMessage &msg) {
+    uint8_t priority = std::visit([](const auto &m) { return message::default_priority(m); }, msg);
+    return send(msg, priority);
 }
 
 } // namespace nmea

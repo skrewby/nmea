@@ -44,7 +44,8 @@ public:
     std::optional<uint8_t> address() const { return m_address; }
 
     std::shared_future<std::expected<void, std::string>> claim(DeviceName name);
-    std::expected<void, std::string> send(const NmeaMessage &msg, uint8_t priority = 6);
+    std::expected<void, std::string> send(const NmeaMessage &msg);
+    std::expected<void, std::string> send(const NmeaMessage &msg, uint8_t priority);
 
 private:
     connection_t m_conn;

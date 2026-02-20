@@ -23,6 +23,8 @@ struct CogSog {
     double sog;            // m/s
 };
 
+constexpr uint8_t default_priority(const CogSog &) { return 2; }
+
 /// PGN 130312 - Temperature
 struct Temperature {
     uint8_t sid;
@@ -31,6 +33,8 @@ struct Temperature {
     double actual_temperature; // K
     double set_temperature;    // K
 };
+
+constexpr uint8_t default_priority(const Temperature &) { return 6; }
 
 } // namespace message
 
