@@ -9,6 +9,7 @@ set (LIBRARY_SOURCES
     src/connection.cpp
     src/listener.cpp
     src/message.cpp
+    src/device.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${LIBRARY_SOURCES})

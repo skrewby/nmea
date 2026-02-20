@@ -10,6 +10,10 @@ template <typename... Ts> struct overload : Ts... {
 
 } // namespace internal
 
+template <typename... Visitors> auto visit(NmeaMessage &msg, Visitors &&...visitors) {
+    return std::visit(internal::overload{std::forward<Visitors>(visitors)...}, msg);
+}
+
 template <typename... Visitors> auto visit(const NmeaMessage &msg, Visitors &&...visitors) {
     return std::visit(internal::overload{std::forward<Visitors>(visitors)...}, msg);
 }

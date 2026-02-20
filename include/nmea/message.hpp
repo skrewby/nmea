@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <expected>
 #include <format>
@@ -35,7 +36,13 @@ struct Temperature {
 
 using NmeaMessage = std::variant<message::CogSog, message::Temperature>;
 
+struct SerializedMessage {
+    uint32_t pgn;
+    std::array<uint8_t, 8> data;
+};
+
 std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8_t> data);
+SerializedMessage serialize(const NmeaMessage &msg);
 } // namespace nmea
 
 template <> struct std::formatter<nmea::message::CogSog> : std::formatter<std::string> {

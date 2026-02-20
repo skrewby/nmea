@@ -8,7 +8,7 @@
 
 constexpr int POLL_TIMEOUT = -1;
 
-void process_message(nmea::NmeaMessage msg) {
+void process_message(nmea::NmeaMessage &msg) {
     nmea::visit(
         msg,
         [](nmea::message::CogSog &m) {
