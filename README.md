@@ -148,6 +148,12 @@ And finally send the messages and confirm the listener prints the formatted outp
 ./run.sh device
 ```
 
+## Examples
+
+See the `examples` folder or projects that utilize this library:
+
+- [Actisense NGX-1-ISO Tester](https://github.com/skrewby/actisense_gateway_tester)
+
 ## References
 
 This is a hobby project to learn the NMEA standard, for use in the real world refer to the following libraries:
