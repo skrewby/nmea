@@ -1,4 +1,5 @@
 #include "nmea/message.hpp"
+#include "nmea/visit.hpp"
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -69,15 +70,8 @@ std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8
 }
 
 SerializedMessage serialize(const NmeaMessage &msg) {
-    return std::visit(
-        [](const auto &m) -> SerializedMessage {
-            using T = std::decay_t<decltype(m)>;
-            if constexpr (std::is_same_v<T, message::CogSog>) {
-                return serialize_cogsog(m);
-            } else {
-                return serialize_temperature(m);
-            }
-        },
-        msg);
+    return nmea::visit(
+        msg, [](const message::CogSog &m) { return serialize_cogsog(m); },
+        [](const message::Temperature &m) { return serialize_temperature(m); });
 }
 } // namespace nmea
