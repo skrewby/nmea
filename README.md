@@ -152,7 +152,7 @@ And finally send the messages and confirm the listener prints the formatted outp
 
 See the `examples` folder or projects that utilize this library:
 
-- [Actisense NGX-1-ISO Tester](https://github.com/skrewby/actisense_gateway_tester)
+- [NMEA Simulator](https://github.com/skrewby/nmea_simulator)
 
 ## References
 
