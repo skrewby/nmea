@@ -1,17 +1,20 @@
 #pragma once
 
-#include <array>
 #include <cstdint>
 #include <expected>
 #include <format>
 #include <span>
 #include <string>
 #include <variant>
+#include <vector>
 
 namespace nmea {
 namespace pgn {
+constexpr uint32_t TP_CM = 60416;
+constexpr uint32_t TP_DT = 60160;
 constexpr uint32_t COG_SOG = 129026;
 constexpr uint32_t TEMPERATURE = 130312;
+constexpr uint32_t VESSEL_SPEED = 130578;
 } // namespace pgn
 
 namespace message {
@@ -36,13 +39,28 @@ struct Temperature {
 
 constexpr uint8_t default_priority(const Temperature &) { return 6; }
 
+/// PGN 130578 - Vessel Speed Components
+struct VesselSpeedComponents {
+    struct Ref {
+        double water;
+        double ground;
+    };
+
+    Ref longitudinal; // m/s
+    Ref transverse;   // m/s
+    Ref stern;        // m/s
+};
+
+constexpr uint8_t default_priority(const VesselSpeedComponents &) { return 2; }
+
 } // namespace message
 
-using NmeaMessage = std::variant<message::CogSog, message::Temperature>;
+using NmeaMessage =
+    std::variant<message::CogSog, message::Temperature, message::VesselSpeedComponents>;
 
 struct SerializedMessage {
     uint32_t pgn;
-    std::array<uint8_t, 8> data;
+    std::vector<uint8_t> data;
 };
 
 std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8_t> data);
@@ -64,6 +82,18 @@ template <> struct std::formatter<nmea::message::Temperature> : std::formatter<s
             std::format("Temperature(SID={}, Instance={}, Source={} Actual Temperature={} K, Set "
                         "Temperature={} K)",
                         m.sid, m.instance, m.source, m.actual_temperature, m.set_temperature),
+            ctx);
+    }
+};
+
+template <>
+struct std::formatter<nmea::message::VesselSpeedComponents> : std::formatter<std::string> {
+    auto format(const nmea::message::VesselSpeedComponents &m, auto &ctx) const {
+        return std::formatter<std::string>::format(
+            std::format("VesselSpeed(Longitudinal=(Ground: {}, Water: {}), Transverse=(Ground: {}, "
+                        "Water: {}), Stern=(Ground: {}, Water: {}))",
+                        m.longitudinal.ground, m.longitudinal.water, m.transverse.ground,
+                        m.transverse.water, m.stern.ground, m.stern.water),
             ctx);
     }
 };

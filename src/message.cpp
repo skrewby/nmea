@@ -1,20 +1,25 @@
 #include "nmea/message.hpp"
 #include "nmea/visit.hpp"
-#include <array>
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <vector>
 
 namespace nmea {
 static uint16_t read_u16(std::span<const uint8_t> data, size_t idx) {
     return static_cast<uint16_t>(data[idx] | (data[idx + 1] << 8));
 }
 
-static void write_u16(std::array<uint8_t, 8> &data, size_t idx, uint16_t val) {
+static int16_t read_i16(std::span<const uint8_t> data, size_t idx) {
+    return static_cast<int16_t>(data[idx] | (data[idx + 1] << 8));
+}
+
+static void write_u16(std::vector<uint8_t> &data, size_t idx, uint16_t val) {
     data[idx] = static_cast<uint8_t>(val);
     data[idx + 1] = static_cast<uint8_t>(val >> 8);
 }
 
+// ============================== 129026 - COG & SOG, Rapid Update ============================== //
 static message::CogSog parse_cogsog(std::span<const uint8_t> data) {
     message::CogSog msg{};
 
@@ -27,7 +32,7 @@ static message::CogSog parse_cogsog(std::span<const uint8_t> data) {
 }
 
 static SerializedMessage serialize_cogsog(const message::CogSog &msg) {
-    std::array<uint8_t, 8> data{};
+    std::vector<uint8_t> data(8, 0);
     data[0] = msg.sid;
     data[1] = msg.cog_reference & 0x03;
     write_u16(data, 2, static_cast<uint16_t>(std::lround(msg.cog / 0.0001)));
@@ -35,6 +40,7 @@ static SerializedMessage serialize_cogsog(const message::CogSog &msg) {
     return {pgn::COG_SOG, data};
 }
 
+// ==================================== 130312 - Temperature ==================================== //
 static message::Temperature parse_temperature(std::span<const uint8_t> data) {
     message::Temperature msg{};
 
@@ -48,7 +54,7 @@ static message::Temperature parse_temperature(std::span<const uint8_t> data) {
 }
 
 static SerializedMessage serialize_temperature(const message::Temperature &msg) {
-    std::array<uint8_t, 8> data{};
+    std::vector<uint8_t> data(8, 0);
     data[0] = msg.sid;
     data[1] = msg.instance;
     data[2] = msg.source;
@@ -57,6 +63,35 @@ static SerializedMessage serialize_temperature(const message::Temperature &msg) 
     return {pgn::TEMPERATURE, data};
 }
 
+// ============================== 130578 - Vessel Speed Components ============================== //
+static message::VesselSpeedComponents parse_vessel_speed_components(std::span<const uint8_t> data) {
+    message::VesselSpeedComponents msg{};
+
+    msg.longitudinal.water = read_i16(data, 0) * 0.001;
+    msg.transverse.water = read_i16(data, 2) * 0.001;
+    msg.longitudinal.ground = read_i16(data, 4) * 0.001;
+    msg.transverse.ground = read_i16(data, 6) * 0.001;
+    msg.stern.water = read_i16(data, 8) * 0.001;
+    msg.stern.ground = read_i16(data, 10) * 0.001;
+
+    return msg;
+}
+
+static SerializedMessage
+serialize_vessel_speed_components(const message::VesselSpeedComponents &msg) {
+    std::vector<uint8_t> data(12, 0);
+
+    write_u16(data, 0, static_cast<uint16_t>(std::lround(msg.longitudinal.water / 0.001)));
+    write_u16(data, 2, static_cast<uint16_t>(std::lround(msg.transverse.water / 0.001)));
+    write_u16(data, 4, static_cast<uint16_t>(std::lround(msg.longitudinal.ground / 0.001)));
+    write_u16(data, 6, static_cast<uint16_t>(std::lround(msg.transverse.ground / 0.001)));
+    write_u16(data, 8, static_cast<uint16_t>(std::lround(msg.stern.water / 0.001)));
+    write_u16(data, 10, static_cast<uint16_t>(std::lround(msg.stern.ground / 0.001)));
+
+    return {pgn::VESSEL_SPEED, data};
+}
+
+// ================================== Public API Implementation ================================= //
 std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8_t> data) {
     auto msg_pgn = (id >> 8) & 0x3FFFF;
     switch (msg_pgn) {
@@ -64,6 +99,8 @@ std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8
         return parse_cogsog(data);
     case pgn::TEMPERATURE:
         return parse_temperature(data);
+    case pgn::VESSEL_SPEED:
+        return parse_vessel_speed_components(data);
     default:
         return std::unexpected(std::format("PGN {} not supported", msg_pgn));
     }
@@ -72,6 +109,9 @@ std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8
 SerializedMessage serialize(const NmeaMessage &msg) {
     return nmea::visit(
         msg, [](const message::CogSog &m) { return serialize_cogsog(m); },
-        [](const message::Temperature &m) { return serialize_temperature(m); });
+        [](const message::Temperature &m) { return serialize_temperature(m); },
+        [](const message::VesselSpeedComponents &m) {
+            return serialize_vessel_speed_components(m);
+        });
 }
 } // namespace nmea
