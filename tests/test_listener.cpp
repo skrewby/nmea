@@ -114,3 +114,17 @@ TEST_F(ListenerTest, Parse130578) {
     EXPECT_DOUBLE_EQ(msg->stern.water, 0x0A09 * 0.001);
     EXPECT_DOUBLE_EQ(msg->stern.ground, 0x0C0D * 0.001);
 }
+
+TEST_F(ListenerTest, Parse127257) {
+    send_frame(make_can_id(nmea::pgn::ATTITUDE, 3), {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07});
+
+    auto result = listener->read();
+    ASSERT_TRUE(result.has_value());
+
+    auto *msg = std::get_if<nmea::message::Attitude>(&*result);
+    ASSERT_NE(msg, nullptr);
+    EXPECT_EQ(msg->sid, 0x01);
+    EXPECT_DOUBLE_EQ(msg->yaw, 0x0302 * 0.0001);
+    EXPECT_DOUBLE_EQ(msg->pitch, 0x0504 * 0.0001);
+    EXPECT_DOUBLE_EQ(msg->roll, 0x0706 * 0.0001);
+}

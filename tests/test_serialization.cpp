@@ -80,3 +80,25 @@ TEST(SerializationTest, VesselSpeedComponentsRoundTrip) {
     EXPECT_EQ(msg->stern.water, original.stern.water);
     EXPECT_EQ(msg->stern.ground, original.stern.ground);
 }
+
+TEST(SerializationTest, AttitudeRoundTrip) {
+    nmea::message::Attitude original{
+        .sid = 1,
+        .yaw = 0x1234 * 0.0001,
+        .pitch = 0x5678 * 0.0001,
+        .roll = 0x3ABC * 0.0001,
+    };
+
+    auto serialized = nmea::serialize(original);
+    ASSERT_EQ(serialized.pgn, nmea::pgn::ATTITUDE);
+
+    auto parsed = nmea::parse(serialized.pgn << 8, serialized.data);
+    ASSERT_TRUE(parsed.has_value());
+
+    auto *msg = std::get_if<nmea::message::Attitude>(&*parsed);
+    ASSERT_NE(msg, nullptr);
+    EXPECT_EQ(msg->sid, original.sid);
+    EXPECT_DOUBLE_EQ(msg->yaw, original.yaw);
+    EXPECT_DOUBLE_EQ(msg->pitch, original.pitch);
+    EXPECT_DOUBLE_EQ(msg->roll, original.roll);
+}

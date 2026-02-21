@@ -12,6 +12,7 @@ namespace nmea {
 namespace pgn {
 constexpr uint32_t TP_CM = 60416;
 constexpr uint32_t TP_DT = 60160;
+constexpr uint32_t ATTITUDE = 127257;
 constexpr uint32_t COG_SOG = 129026;
 constexpr uint32_t TEMPERATURE = 130312;
 constexpr uint32_t VESSEL_SPEED = 130578;
@@ -53,10 +54,20 @@ struct VesselSpeedComponents {
 
 constexpr uint8_t default_priority(const VesselSpeedComponents &) { return 2; }
 
+// PGN 127257 - Attitude
+struct Attitude {
+    uint8_t sid;
+    double yaw;   // radians
+    double pitch; // radians
+    double roll;  // radians
+};
+
+constexpr uint8_t default_priority(const Attitude &) { return 3; }
+
 } // namespace message
 
-using NmeaMessage =
-    std::variant<message::CogSog, message::Temperature, message::VesselSpeedComponents>;
+using NmeaMessage = std::variant<message::CogSog, message::Temperature,
+                                 message::VesselSpeedComponents, message::Attitude>;
 
 struct SerializedMessage {
     uint32_t pgn;
@@ -94,6 +105,15 @@ struct std::formatter<nmea::message::VesselSpeedComponents> : std::formatter<std
                         "Water: {}), Stern=(Ground: {}, Water: {}))",
                         m.longitudinal.ground, m.longitudinal.water, m.transverse.ground,
                         m.transverse.water, m.stern.ground, m.stern.water),
+            ctx);
+    }
+};
+
+template <> struct std::formatter<nmea::message::Attitude> : std::formatter<std::string> {
+    auto format(const nmea::message::Attitude &m, auto &ctx) const {
+        return std::formatter<std::string>::format(
+            std::format("Attitude(SID={}, Yaw={}, Pitch={}, Roll={})", m.sid, m.yaw, m.pitch,
+                        m.roll),
             ctx);
     }
 };

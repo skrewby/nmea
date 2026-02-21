@@ -106,3 +106,27 @@ TEST_F(DeviceSendTest, SendTemperature) {
     EXPECT_DOUBLE_EQ(msg->actual_temperature, original.actual_temperature);
     EXPECT_DOUBLE_EQ(msg->set_temperature, original.set_temperature);
 }
+
+TEST_F(DeviceSendTest, SendAttitude) {
+    nmea::message::Attitude original{
+        .sid = 1,
+        .yaw = 0x1234 * 0.0001,
+        .pitch = 0x5678 * 0.0001,
+        .roll = 0x3ABC * 0.0001,
+    };
+
+    ASSERT_TRUE(device->send(original).has_value());
+
+    auto frame = read_frame();
+    EXPECT_EQ((frame.can_id >> 8) & 0x3FFFF, nmea::pgn::ATTITUDE);
+    EXPECT_EQ(frame.can_id & 0xFF, expected_address);
+
+    auto parsed = nmea::parse(frame.can_id, std::span(frame.data, frame.can_dlc));
+    ASSERT_TRUE(parsed.has_value());
+    auto *msg = std::get_if<nmea::message::Attitude>(&*parsed);
+    ASSERT_NE(msg, nullptr);
+    EXPECT_EQ(msg->sid, original.sid);
+    EXPECT_EQ(msg->yaw, original.yaw);
+    EXPECT_EQ(msg->pitch, original.pitch);
+    EXPECT_EQ(msg->roll, original.roll);
+}

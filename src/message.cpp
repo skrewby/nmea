@@ -91,6 +91,29 @@ serialize_vessel_speed_components(const message::VesselSpeedComponents &msg) {
     return {pgn::VESSEL_SPEED, data};
 }
 
+// ===================================== 127257 - Attitude ====================================== //
+static message::Attitude parse_attitude(std::span<const uint8_t> data) {
+    message::Attitude msg{};
+
+    msg.sid = data[0];
+    msg.yaw = read_i16(data, 1) * 0.0001;
+    msg.pitch = read_i16(data, 3) * 0.0001;
+    msg.roll = read_i16(data, 5) * 0.0001;
+
+    return msg;
+}
+
+static SerializedMessage serialize_attitude(const message::Attitude &msg) {
+    std::vector<uint8_t> data(8, 0);
+
+    data[0] = msg.sid;
+    write_u16(data, 1, static_cast<uint16_t>(std::lround(msg.yaw / 0.0001)));
+    write_u16(data, 3, static_cast<uint16_t>(std::lround(msg.pitch / 0.0001)));
+    write_u16(data, 5, static_cast<uint16_t>(std::lround(msg.roll / 0.0001)));
+
+    return {pgn::ATTITUDE, data};
+}
+
 // ================================== Public API Implementation ================================= //
 std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8_t> data) {
     auto msg_pgn = (id >> 8) & 0x3FFFF;
@@ -101,6 +124,8 @@ std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8
         return parse_temperature(data);
     case pgn::VESSEL_SPEED:
         return parse_vessel_speed_components(data);
+    case pgn::ATTITUDE:
+        return parse_attitude(data);
     default:
         return std::unexpected(std::format("PGN {} not supported", msg_pgn));
     }
@@ -112,6 +137,7 @@ SerializedMessage serialize(const NmeaMessage &msg) {
         [](const message::Temperature &m) { return serialize_temperature(m); },
         [](const message::VesselSpeedComponents &m) {
             return serialize_vessel_speed_components(m);
-        });
+        },
+        [](const message::Attitude &m) { return serialize_attitude(m); });
 }
 } // namespace nmea
