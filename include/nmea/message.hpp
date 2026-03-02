@@ -18,6 +18,7 @@ constexpr uint32_t VESSEL_HEADING = 127250;
 constexpr uint32_t RATE_OF_TURN = 127251;
 constexpr uint32_t HEAVE = 127252;
 constexpr uint32_t ATTITUDE = 127257;
+constexpr uint32_t POSITION = 129025;
 constexpr uint32_t COG_SOG = 129026;
 constexpr uint32_t TEMPERATURE = 130312;
 constexpr uint32_t VESSEL_SPEED = 130578;
@@ -90,13 +91,21 @@ struct Heave {
     double heave; // m
 };
 
+// PGN 129025 - Position, Rapid Update
+struct Position {
+    static constexpr uint8_t priority = 2;
+    double latitude;  // degrees
+    double longitude; // degrees
+};
+
 template <typename T> constexpr uint8_t default_priority(const T &) { return T::priority; }
 
 } // namespace message
 
 using NmeaMessage =
     std::variant<message::CogSog, message::Temperature, message::VesselSpeedComponents,
-                 message::Attitude, message::VesselHeading, message::RateOfTurn, message::Heave>;
+                 message::Attitude, message::VesselHeading, message::RateOfTurn, message::Heave,
+                 message::Position>;
 
 struct SerializedMessage {
     uint32_t pgn;
@@ -168,6 +177,13 @@ template <> struct std::formatter<nmea::message::Heave> : std::formatter<std::st
     auto format(const nmea::message::Heave &m, auto &ctx) const {
         return std::formatter<std::string>::format(
             std::format("Heave(SID={}, Heave={})", m.sid, m.heave), ctx);
+    }
+};
+
+template <> struct std::formatter<nmea::message::Position> : std::formatter<std::string> {
+    auto format(const nmea::message::Position &m, auto &ctx) const {
+        return std::formatter<std::string>::format(
+            std::format("Position(Latitude={}, Longitude={})", m.latitude, m.longitude), ctx);
     }
 };
 

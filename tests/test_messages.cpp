@@ -173,3 +173,19 @@ TEST_F(MessageTest, Heave) {
     EXPECT_EQ(msg->sid, original.sid);
     EXPECT_DOUBLE_EQ(msg->heave, original.heave);
 }
+
+TEST_F(MessageTest, Position) {
+    nmea::message::Position original{
+        .latitude = 0x12345678 * 1e-07,
+        .longitude = 0x07654321 * 1e-07,
+    };
+
+    ASSERT_TRUE(device->send(original).has_value());
+
+    auto result = listener->read();
+    ASSERT_TRUE(result.has_value());
+    auto *msg = std::get_if<nmea::message::Position>(&*result);
+    ASSERT_NE(msg, nullptr);
+    EXPECT_DOUBLE_EQ(msg->latitude, original.latitude);
+    EXPECT_DOUBLE_EQ(msg->longitude, original.longitude);
+}

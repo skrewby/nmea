@@ -20,6 +20,11 @@ static int16_t read_i16(std::span<const uint8_t> data, size_t idx) {
     return static_cast<int16_t>(data[idx] | (data[idx + 1] << 8));
 }
 
+static int32_t read_i32(std::span<const uint8_t> data, size_t idx) {
+    return static_cast<int32_t>(data[idx] | (data[idx + 1] << 8) | (data[idx + 2] << 16) |
+                                (data[idx + 3] << 24));
+}
+
 static void write_u16(std::vector<uint8_t> &data, size_t idx, uint16_t val) {
     data[idx] = static_cast<uint8_t>(val);
     data[idx + 1] = static_cast<uint8_t>(val >> 8);
@@ -190,6 +195,25 @@ static SerializedMessage serialize_attitude(const message::Attitude &msg) {
     return {pgn::ATTITUDE, data};
 }
 
+// ============================== 129025 - Position, Rapid Update =============================== //
+static message::Position parse_position(std::span<const uint8_t> data) {
+    message::Position msg{};
+
+    msg.latitude = read_i32(data, 0) * 1e-07;
+    msg.longitude = read_i32(data, 4) * 1e-07;
+
+    return msg;
+}
+
+static SerializedMessage serialize_position(const message::Position &msg) {
+    std::vector<uint8_t> data(8, 0);
+
+    write_u32(data, 0, static_cast<uint32_t>(std::lround(msg.latitude / 1e-07)));
+    write_u32(data, 4, static_cast<uint32_t>(std::lround(msg.longitude / 1e-07)));
+
+    return {pgn::POSITION, data};
+}
+
 // ================================== Public API Implementation ================================= //
 std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8_t> data) {
     auto msg_pgn = (id >> 8) & 0x3FFFF;
@@ -208,6 +232,8 @@ std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8
         return parse_rate_of_turn(data);
     case pgn::HEAVE:
         return parse_heave(data);
+    case pgn::POSITION:
+        return parse_position(data);
     default:
         return std::unexpected(std::format("PGN {} not supported", msg_pgn));
     }
@@ -223,6 +249,7 @@ SerializedMessage serialize(const NmeaMessage &msg) {
         [](const message::Attitude &m) { return serialize_attitude(m); },
         [](const message::VesselHeading &m) { return serialize_vessel_heading(m); },
         [](const message::RateOfTurn &m) { return serialize_rate_of_turn(m); },
-        [](const message::Heave &m) { return serialize_heave(m); });
+        [](const message::Heave &m) { return serialize_heave(m); },
+        [](const message::Position &m) { return serialize_position(m); });
 }
 } // namespace nmea
