@@ -11,6 +11,11 @@ static uint16_t read_u16(std::span<const uint8_t> data, size_t idx) {
     return static_cast<uint16_t>(data[idx] | (data[idx + 1] << 8));
 }
 
+static uint32_t read_u32(std::span<const uint8_t> data, size_t idx) {
+    return static_cast<uint32_t>(data[idx] | (data[idx + 1] << 8) | (data[idx + 2] << 16) |
+                                 (data[idx + 3] << 24));
+}
+
 static int16_t read_i16(std::span<const uint8_t> data, size_t idx) {
     return static_cast<int16_t>(data[idx] | (data[idx + 1] << 8));
 }
@@ -18,6 +23,13 @@ static int16_t read_i16(std::span<const uint8_t> data, size_t idx) {
 static void write_u16(std::vector<uint8_t> &data, size_t idx, uint16_t val) {
     data[idx] = static_cast<uint8_t>(val);
     data[idx + 1] = static_cast<uint8_t>(val >> 8);
+}
+
+static void write_u32(std::vector<uint8_t> &data, size_t idx, uint32_t val) {
+    data[idx] = static_cast<uint8_t>(val);
+    data[idx + 1] = static_cast<uint8_t>(val >> 8);
+    data[idx + 2] = static_cast<uint8_t>(val >> 16);
+    data[idx + 3] = static_cast<uint8_t>(val >> 24);
 }
 
 // ============================== 129026 - COG & SOG, Rapid Update ============================== //
@@ -117,6 +129,25 @@ static SerializedMessage serialize_vessel_heading(const message::VesselHeading &
     return {pgn::VESSEL_HEADING, data};
 }
 
+// ==================================== 127251 - Rate of Turn =================================== //
+static message::RateOfTurn parse_rate_of_turn(std::span<const uint8_t> data) {
+    message::RateOfTurn msg{};
+
+    msg.sid = data[0];
+    msg.rate = read_u32(data, 1) * 3.125e-08;
+
+    return msg;
+}
+
+static SerializedMessage serialize_rate_of_turn(const message::RateOfTurn &msg) {
+    std::vector<uint8_t> data(8, 0);
+
+    data[0] = msg.sid;
+    write_u32(data, 1, static_cast<uint32_t>(std::lround(msg.rate / 3.125e-08)));
+
+    return {pgn::RATE_OF_TURN, data};
+}
+
 // ===================================== 127257 - Attitude ====================================== //
 static message::Attitude parse_attitude(std::span<const uint8_t> data) {
     message::Attitude msg{};
@@ -154,6 +185,8 @@ std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8
         return parse_attitude(data);
     case pgn::VESSEL_HEADING:
         return parse_vessel_heading(data);
+    case pgn::RATE_OF_TURN:
+        return parse_rate_of_turn(data);
     default:
         return std::unexpected(std::format("PGN {} not supported", msg_pgn));
     }
@@ -167,6 +200,7 @@ SerializedMessage serialize(const NmeaMessage &msg) {
             return serialize_vessel_speed_components(m);
         },
         [](const message::Attitude &m) { return serialize_attitude(m); },
-        [](const message::VesselHeading &m) { return serialize_vessel_heading(m); });
+        [](const message::VesselHeading &m) { return serialize_vessel_heading(m); },
+        [](const message::RateOfTurn &m) { return serialize_rate_of_turn(m); });
 }
 } // namespace nmea

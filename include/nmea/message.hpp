@@ -15,6 +15,7 @@ namespace pgn {
 constexpr uint32_t TP_CM = 60416;
 constexpr uint32_t TP_DT = 60160;
 constexpr uint32_t VESSEL_HEADING = 127250;
+constexpr uint32_t RATE_OF_TURN = 127251;
 constexpr uint32_t ATTITUDE = 127257;
 constexpr uint32_t COG_SOG = 129026;
 constexpr uint32_t TEMPERATURE = 130312;
@@ -74,13 +75,20 @@ struct VesselHeading {
     DirectionReference reference;
 };
 
+// PGN 127251 - Rate of Turn
+struct RateOfTurn {
+    static constexpr uint8_t priority = 2;
+    uint8_t sid;
+    double rate; // radians
+};
+
 template <typename T> constexpr uint8_t default_priority(const T &) { return T::priority; }
 
 } // namespace message
 
 using NmeaMessage =
     std::variant<message::CogSog, message::Temperature, message::VesselSpeedComponents,
-                 message::Attitude, message::VesselHeading>;
+                 message::Attitude, message::VesselHeading, message::RateOfTurn>;
 
 struct SerializedMessage {
     uint32_t pgn;
@@ -138,6 +146,13 @@ template <> struct std::formatter<nmea::message::VesselHeading> : std::formatter
                 "Vessel Heading(SID={}, Heading={}, Deviation={}, Variation={}, Reference={})",
                 m.sid, m.heading, m.deviation, m.variation, std::to_underlying(m.reference)),
             ctx);
+    }
+};
+
+template <> struct std::formatter<nmea::message::RateOfTurn> : std::formatter<std::string> {
+    auto format(const nmea::message::RateOfTurn &m, auto &ctx) const {
+        return std::formatter<std::string>::format(
+            std::format("Rate of Turn(SID={}, Rate={})", m.sid, m.rate), ctx);
     }
 };
 

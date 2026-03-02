@@ -141,3 +141,19 @@ TEST_F(MessageTest, VesselHeading) {
     EXPECT_DOUBLE_EQ(msg->variation, original.variation);
     EXPECT_DOUBLE_EQ(std::to_underlying(msg->reference), std::to_underlying(original.reference));
 }
+
+TEST_F(MessageTest, RateOfTurn) {
+    nmea::message::RateOfTurn original{
+        .sid = 1,
+        .rate = 0x12345678 * 3.125e-08,
+    };
+
+    ASSERT_TRUE(device->send(original).has_value());
+
+    auto result = listener->read();
+    ASSERT_TRUE(result.has_value());
+    auto *msg = std::get_if<nmea::message::RateOfTurn>(&*result);
+    ASSERT_NE(msg, nullptr);
+    EXPECT_EQ(msg->sid, original.sid);
+    EXPECT_DOUBLE_EQ(msg->rate, original.rate);
+}
