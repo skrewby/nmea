@@ -6,6 +6,7 @@
 #include <optional>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <utility>
 
 class MessageTest : public ::testing::Test {
 protected:
@@ -117,4 +118,26 @@ TEST_F(MessageTest, VesselSpeedComponents) {
     EXPECT_DOUBLE_EQ(msg->transverse.ground, original.transverse.ground);
     EXPECT_DOUBLE_EQ(msg->stern.water, original.stern.water);
     EXPECT_DOUBLE_EQ(msg->stern.ground, original.stern.ground);
+}
+
+TEST_F(MessageTest, VesselHeading) {
+    nmea::message::VesselHeading original{
+        .sid = 1,
+        .heading = 0x1234 * 0.0001,
+        .deviation = 0x5678 * 0.0001,
+        .variation = 0x3ABC * 0.0001,
+        .reference = DirectionReference::MAGNETIC,
+    };
+
+    ASSERT_TRUE(device->send(original).has_value());
+
+    auto result = listener->read();
+    ASSERT_TRUE(result.has_value());
+    auto *msg = std::get_if<nmea::message::VesselHeading>(&*result);
+    ASSERT_NE(msg, nullptr);
+    EXPECT_EQ(msg->sid, original.sid);
+    EXPECT_DOUBLE_EQ(msg->heading, original.heading);
+    EXPECT_DOUBLE_EQ(msg->deviation, original.deviation);
+    EXPECT_DOUBLE_EQ(msg->variation, original.variation);
+    EXPECT_DOUBLE_EQ(std::to_underlying(msg->reference), std::to_underlying(original.reference));
 }

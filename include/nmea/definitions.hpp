@@ -2,6 +2,12 @@
 
 #include <cstdint>
 
+enum class DirectionReference : uint8_t {
+    TRUE = 0,
+    MAGNETIC = 1,
+    ERROR = 2,
+};
+
 enum class IndustryCode : uint8_t {
     GLOBAL = 0,
     HIGHWAY = 1,

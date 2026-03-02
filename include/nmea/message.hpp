@@ -1,10 +1,12 @@
 #pragma once
 
+#include "nmea/definitions.hpp"
 #include <cstdint>
 #include <expected>
 #include <format>
 #include <span>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -12,6 +14,7 @@ namespace nmea {
 namespace pgn {
 constexpr uint32_t TP_CM = 60416;
 constexpr uint32_t TP_DT = 60160;
+constexpr uint32_t VESSEL_HEADING = 127250;
 constexpr uint32_t ATTITUDE = 127257;
 constexpr uint32_t COG_SOG = 129026;
 constexpr uint32_t TEMPERATURE = 130312;
@@ -64,10 +67,22 @@ struct Attitude {
 
 constexpr uint8_t default_priority(const Attitude &) { return 3; }
 
+// PGN 127250 - Vessel Heading
+struct VesselHeading {
+    uint8_t sid;
+    double heading;   // radians
+    double deviation; // radians
+    double variation; // radians
+    DirectionReference reference;
+};
+
+constexpr uint8_t default_priority(const VesselHeading &) { return 2; }
+
 } // namespace message
 
-using NmeaMessage = std::variant<message::CogSog, message::Temperature,
-                                 message::VesselSpeedComponents, message::Attitude>;
+using NmeaMessage =
+    std::variant<message::CogSog, message::Temperature, message::VesselSpeedComponents,
+                 message::Attitude, message::VesselHeading>;
 
 struct SerializedMessage {
     uint32_t pgn;
@@ -114,6 +129,16 @@ template <> struct std::formatter<nmea::message::Attitude> : std::formatter<std:
         return std::formatter<std::string>::format(
             std::format("Attitude(SID={}, Yaw={}, Pitch={}, Roll={})", m.sid, m.yaw, m.pitch,
                         m.roll),
+            ctx);
+    }
+};
+
+template <> struct std::formatter<nmea::message::VesselHeading> : std::formatter<std::string> {
+    auto format(const nmea::message::VesselHeading &m, auto &ctx) const {
+        return std::formatter<std::string>::format(
+            std::format(
+                "Vessel Heading(SID={}, Heading={}, Deviation={}, Variation={}, Reference={})",
+                m.sid, m.heading, m.deviation, m.variation, std::to_underlying(m.reference)),
             ctx);
     }
 };

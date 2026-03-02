@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <utility>
 #include <vector>
 
 namespace nmea {
@@ -91,6 +92,31 @@ serialize_vessel_speed_components(const message::VesselSpeedComponents &msg) {
     return {pgn::VESSEL_SPEED, data};
 }
 
+// ====================================== 127250 - Heading ====================================== //
+static message::VesselHeading parse_vessel_heading(std::span<const uint8_t> data) {
+    message::VesselHeading msg{};
+
+    msg.sid = data[0];
+    msg.heading = read_u16(data, 1) * 0.0001;
+    msg.deviation = read_i16(data, 3) * 0.0001;
+    msg.variation = read_i16(data, 5) * 0.0001;
+    msg.reference = static_cast<DirectionReference>(data[7] & 0x3);
+
+    return msg;
+}
+
+static SerializedMessage serialize_vessel_heading(const message::VesselHeading &msg) {
+    std::vector<uint8_t> data(8, 0);
+
+    data[0] = msg.sid;
+    write_u16(data, 1, static_cast<uint16_t>(std::lround(msg.heading / 0.0001)));
+    write_u16(data, 3, static_cast<uint16_t>(std::lround(msg.deviation / 0.0001)));
+    write_u16(data, 5, static_cast<uint16_t>(std::lround(msg.variation / 0.0001)));
+    data[7] = std::to_underlying(msg.reference);
+
+    return {pgn::VESSEL_HEADING, data};
+}
+
 // ===================================== 127257 - Attitude ====================================== //
 static message::Attitude parse_attitude(std::span<const uint8_t> data) {
     message::Attitude msg{};
@@ -126,6 +152,8 @@ std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8
         return parse_vessel_speed_components(data);
     case pgn::ATTITUDE:
         return parse_attitude(data);
+    case pgn::VESSEL_HEADING:
+        return parse_vessel_heading(data);
     default:
         return std::unexpected(std::format("PGN {} not supported", msg_pgn));
     }
@@ -138,6 +166,7 @@ SerializedMessage serialize(const NmeaMessage &msg) {
         [](const message::VesselSpeedComponents &m) {
             return serialize_vessel_speed_components(m);
         },
-        [](const message::Attitude &m) { return serialize_attitude(m); });
+        [](const message::Attitude &m) { return serialize_attitude(m); },
+        [](const message::VesselHeading &m) { return serialize_vessel_heading(m); });
 }
 } // namespace nmea
