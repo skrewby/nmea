@@ -24,16 +24,16 @@ constexpr uint32_t VESSEL_SPEED = 130578;
 namespace message {
 /// PGN 129026 - COG & SOG, Rapid Update
 struct CogSog {
+    static constexpr uint8_t priority = 2;
     uint8_t sid;
     uint8_t cog_reference; // 0 = true, 1 = magnetic
     double cog;            // radians
     double sog;            // m/s
 };
 
-constexpr uint8_t default_priority(const CogSog &) { return 2; }
-
 /// PGN 130312 - Temperature
 struct Temperature {
+    static constexpr uint8_t priority = 6;
     uint8_t sid;
     uint8_t instance;
     uint8_t source;
@@ -41,10 +41,10 @@ struct Temperature {
     double set_temperature;    // K
 };
 
-constexpr uint8_t default_priority(const Temperature &) { return 6; }
-
 /// PGN 130578 - Vessel Speed Components
 struct VesselSpeedComponents {
+    static constexpr uint8_t priority = 2;
+
     struct Ref {
         double water;
         double ground;
@@ -55,20 +55,18 @@ struct VesselSpeedComponents {
     Ref stern;        // m/s
 };
 
-constexpr uint8_t default_priority(const VesselSpeedComponents &) { return 2; }
-
 // PGN 127257 - Attitude
 struct Attitude {
+    static constexpr uint8_t priority = 3;
     uint8_t sid;
     double yaw;   // radians
     double pitch; // radians
     double roll;  // radians
 };
 
-constexpr uint8_t default_priority(const Attitude &) { return 3; }
-
 // PGN 127250 - Vessel Heading
 struct VesselHeading {
+    static constexpr uint8_t priority = 2;
     uint8_t sid;
     double heading;   // radians
     double deviation; // radians
@@ -76,7 +74,7 @@ struct VesselHeading {
     DirectionReference reference;
 };
 
-constexpr uint8_t default_priority(const VesselHeading &) { return 2; }
+template <typename T> constexpr uint8_t default_priority(const T &) { return T::priority; }
 
 } // namespace message
 
