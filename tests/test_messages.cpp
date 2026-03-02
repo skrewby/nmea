@@ -157,3 +157,19 @@ TEST_F(MessageTest, RateOfTurn) {
     EXPECT_EQ(msg->sid, original.sid);
     EXPECT_DOUBLE_EQ(msg->rate, original.rate);
 }
+
+TEST_F(MessageTest, Heave) {
+    nmea::message::Heave original{
+        .sid = 1,
+        .heave = 0x1234 * 0.01,
+    };
+
+    ASSERT_TRUE(device->send(original).has_value());
+
+    auto result = listener->read();
+    ASSERT_TRUE(result.has_value());
+    auto *msg = std::get_if<nmea::message::Heave>(&*result);
+    ASSERT_NE(msg, nullptr);
+    EXPECT_EQ(msg->sid, original.sid);
+    EXPECT_DOUBLE_EQ(msg->heave, original.heave);
+}

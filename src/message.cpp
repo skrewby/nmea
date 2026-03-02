@@ -148,6 +148,25 @@ static SerializedMessage serialize_rate_of_turn(const message::RateOfTurn &msg) 
     return {pgn::RATE_OF_TURN, data};
 }
 
+// ======================================= 127252 - Heave ======================================= //
+static message::Heave parse_heave(std::span<const uint8_t> data) {
+    message::Heave msg{};
+
+    msg.sid = data[0];
+    msg.heave = read_u16(data, 1) * 0.01;
+
+    return msg;
+}
+
+static SerializedMessage serialize_heave(const message::Heave &msg) {
+    std::vector<uint8_t> data(8, 0);
+
+    data[0] = msg.sid;
+    write_u16(data, 1, static_cast<uint16_t>(std::lround(msg.heave / 0.01)));
+
+    return {pgn::HEAVE, data};
+}
+
 // ===================================== 127257 - Attitude ====================================== //
 static message::Attitude parse_attitude(std::span<const uint8_t> data) {
     message::Attitude msg{};
@@ -187,6 +206,8 @@ std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8
         return parse_vessel_heading(data);
     case pgn::RATE_OF_TURN:
         return parse_rate_of_turn(data);
+    case pgn::HEAVE:
+        return parse_heave(data);
     default:
         return std::unexpected(std::format("PGN {} not supported", msg_pgn));
     }
@@ -201,6 +222,7 @@ SerializedMessage serialize(const NmeaMessage &msg) {
         },
         [](const message::Attitude &m) { return serialize_attitude(m); },
         [](const message::VesselHeading &m) { return serialize_vessel_heading(m); },
-        [](const message::RateOfTurn &m) { return serialize_rate_of_turn(m); });
+        [](const message::RateOfTurn &m) { return serialize_rate_of_turn(m); },
+        [](const message::Heave &m) { return serialize_heave(m); });
 }
 } // namespace nmea

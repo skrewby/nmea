@@ -16,6 +16,7 @@ constexpr uint32_t TP_CM = 60416;
 constexpr uint32_t TP_DT = 60160;
 constexpr uint32_t VESSEL_HEADING = 127250;
 constexpr uint32_t RATE_OF_TURN = 127251;
+constexpr uint32_t HEAVE = 127252;
 constexpr uint32_t ATTITUDE = 127257;
 constexpr uint32_t COG_SOG = 129026;
 constexpr uint32_t TEMPERATURE = 130312;
@@ -82,13 +83,20 @@ struct RateOfTurn {
     double rate; // radians
 };
 
+// PGN 127252 - Heave
+struct Heave {
+    static constexpr uint8_t priority = 3;
+    uint8_t sid;
+    double heave; // m
+};
+
 template <typename T> constexpr uint8_t default_priority(const T &) { return T::priority; }
 
 } // namespace message
 
 using NmeaMessage =
     std::variant<message::CogSog, message::Temperature, message::VesselSpeedComponents,
-                 message::Attitude, message::VesselHeading, message::RateOfTurn>;
+                 message::Attitude, message::VesselHeading, message::RateOfTurn, message::Heave>;
 
 struct SerializedMessage {
     uint32_t pgn;
@@ -153,6 +161,13 @@ template <> struct std::formatter<nmea::message::RateOfTurn> : std::formatter<st
     auto format(const nmea::message::RateOfTurn &m, auto &ctx) const {
         return std::formatter<std::string>::format(
             std::format("Rate of Turn(SID={}, Rate={})", m.sid, m.rate), ctx);
+    }
+};
+
+template <> struct std::formatter<nmea::message::Heave> : std::formatter<std::string> {
+    auto format(const nmea::message::Heave &m, auto &ctx) const {
+        return std::formatter<std::string>::format(
+            std::format("Heave(SID={}, Heave={})", m.sid, m.heave), ctx);
     }
 };
 
