@@ -189,3 +189,27 @@ TEST_F(MessageTest, Position) {
     EXPECT_DOUBLE_EQ(msg->latitude, original.latitude);
     EXPECT_DOUBLE_EQ(msg->longitude, original.longitude);
 }
+
+TEST_F(MessageTest, EnvironmentalParameters) {
+    nmea::message::EnvironmentalParameters original{
+        .sid = 1,
+        .temperature_source = TemperatureSource::ENGINE_ROOM_TEMPERATURE,
+        .humidity_source = HumiditySource::INSIDE,
+        .temperature = 0x1234 * 0.01,
+        .humidity = 0x5678 * 0.004,
+        .atmospheric_pressure = 6553200 / 100,
+    };
+
+    ASSERT_TRUE(device->send(original).has_value());
+
+    auto result = listener->read();
+    ASSERT_TRUE(result.has_value());
+    auto *msg = std::get_if<nmea::message::EnvironmentalParameters>(&*result);
+    ASSERT_NE(msg, nullptr);
+    EXPECT_EQ(msg->sid, original.sid);
+    EXPECT_EQ(msg->temperature_source, original.temperature_source);
+    EXPECT_EQ(msg->humidity_source, original.humidity_source);
+    EXPECT_DOUBLE_EQ(msg->temperature, original.temperature);
+    EXPECT_DOUBLE_EQ(msg->humidity, original.humidity);
+    EXPECT_EQ(msg->atmospheric_pressure, original.atmospheric_pressure);
+}

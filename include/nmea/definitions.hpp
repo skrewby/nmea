@@ -8,6 +8,30 @@ enum class DirectionReference : uint8_t {
     ERROR = 2,
 };
 
+enum class TemperatureSource : uint8_t {
+    SEA_TEMPERATURE = 0,
+    OUTSIDE_TEMPERATURE = 1,
+    INSIDE_TEMPERATURE = 2,
+    ENGINE_ROOM_TEMPERATURE = 3,
+    MAIN_CABIN_TEMPERATURE = 4,
+    LIVE_WELL_TEMPERATURE = 5,
+    BAIT_WELL_TEMPERATURE = 6,
+    REFRIGERATION_TEMPERATURE = 7,
+    HEATING_SYSTEM_TEMPERATURE = 8,
+    DEW_POINT_TEMPERATURE = 9,
+    APPARENT_WIND_CHILL_TEMPERATURE = 10,
+    THEORETICAL_WIND_CHILL_TEMPERATURE = 11,
+    HEAT_INDEX_TEMPERATURE = 12,
+    FREEZER_TEMPERATURE = 13,
+    EXHAUST_GAS_TEMPERATURE = 14,
+    SHAFT_SEAL_TEMPERATURE = 15,
+};
+
+enum class HumiditySource : uint8_t {
+    INSIDE = 0,
+    OUTSIDE = 1,
+};
+
 enum class IndustryCode : uint8_t {
     GLOBAL = 0,
     HIGHWAY = 1,

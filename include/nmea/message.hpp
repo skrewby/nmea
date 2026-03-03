@@ -22,6 +22,7 @@ constexpr uint32_t POSITION = 129025;
 constexpr uint32_t COG_SOG = 129026;
 constexpr uint32_t TEMPERATURE = 130312;
 constexpr uint32_t VESSEL_SPEED = 130578;
+constexpr uint32_t ENVIRONMENTAL_PARAMETERS = 130311;
 } // namespace pgn
 
 namespace message {
@@ -98,6 +99,17 @@ struct Position {
     double longitude; // degrees
 };
 
+// PGN 130311 - Environmental Parameters
+struct EnvironmentalParameters {
+    static constexpr uint8_t priority = 5;
+    uint8_t sid;
+    TemperatureSource temperature_source;
+    HumiditySource humidity_source;
+    double temperature;            // K
+    double humidity;               // %
+    uint16_t atmospheric_pressure; // Pa
+};
+
 template <typename T> constexpr uint8_t default_priority(const T &) { return T::priority; }
 
 } // namespace message
@@ -105,7 +117,7 @@ template <typename T> constexpr uint8_t default_priority(const T &) { return T::
 using NmeaMessage =
     std::variant<message::CogSog, message::Temperature, message::VesselSpeedComponents,
                  message::Attitude, message::VesselHeading, message::RateOfTurn, message::Heave,
-                 message::Position>;
+                 message::Position, message::EnvironmentalParameters>;
 
 struct SerializedMessage {
     uint32_t pgn;
@@ -184,6 +196,19 @@ template <> struct std::formatter<nmea::message::Position> : std::formatter<std:
     auto format(const nmea::message::Position &m, auto &ctx) const {
         return std::formatter<std::string>::format(
             std::format("Position(Latitude={}, Longitude={})", m.latitude, m.longitude), ctx);
+    }
+};
+
+template <>
+struct std::formatter<nmea::message::EnvironmentalParameters> : std::formatter<std::string> {
+    auto format(const nmea::message::EnvironmentalParameters &m, auto &ctx) const {
+        return std::formatter<std::string>::format(
+            std::format("Environmental Parameters(SID={}, Temperature Source={}, Humidity "
+                        "Source={}, Temperature={}, Humidity={}, Atmospheric Pressure={})",
+                        m.sid, std::to_underlying(m.temperature_source),
+                        std::to_underlying(m.humidity_source), m.temperature, m.humidity,
+                        m.atmospheric_pressure),
+            ctx);
     }
 };
 

@@ -1,4 +1,5 @@
 #include "nmea/message.hpp"
+#include "nmea/definitions.hpp"
 #include "nmea/visit.hpp"
 #include <cmath>
 #include <cstdint>
@@ -214,6 +215,35 @@ static SerializedMessage serialize_position(const message::Position &msg) {
     return {pgn::POSITION, data};
 }
 
+// ============================= 130311 - Environmental Parameters ============================== //
+static message::EnvironmentalParameters
+parse_environmental_parameters(std::span<const uint8_t> data) {
+    message::EnvironmentalParameters msg{};
+
+    msg.sid = data[0];
+    msg.temperature_source = static_cast<TemperatureSource>(data[1] & 0x3F);
+    msg.humidity_source = static_cast<HumiditySource>(data[1] & 0xC0);
+    msg.temperature = read_u16(data, 2) * 0.01;
+    msg.humidity = read_i16(data, 4) * 0.004;
+    msg.atmospheric_pressure = read_u16(data, 6);
+
+    return msg;
+}
+
+static SerializedMessage
+serialize_environmental_parameters(const message::EnvironmentalParameters &msg) {
+    std::vector<uint8_t> data(8, 0);
+
+    data[0] = msg.sid;
+    data[1] = static_cast<uint8_t>(std::to_underlying(msg.temperature_source)) |
+              static_cast<uint8_t>(std::to_underlying(msg.humidity_source) << 6);
+    write_u16(data, 2, static_cast<uint16_t>(std::lround(msg.temperature / 0.01)));
+    write_u16(data, 4, static_cast<uint16_t>(std::lround(msg.humidity / 0.004)));
+    write_u16(data, 6, static_cast<uint16_t>(std::lround(msg.atmospheric_pressure)));
+
+    return {pgn::ENVIRONMENTAL_PARAMETERS, data};
+}
+
 // ================================== Public API Implementation ================================= //
 std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8_t> data) {
     auto msg_pgn = (id >> 8) & 0x3FFFF;
@@ -234,6 +264,8 @@ std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8
         return parse_heave(data);
     case pgn::POSITION:
         return parse_position(data);
+    case pgn::ENVIRONMENTAL_PARAMETERS:
+        return parse_environmental_parameters(data);
     default:
         return std::unexpected(std::format("PGN {} not supported", msg_pgn));
     }
@@ -250,6 +282,9 @@ SerializedMessage serialize(const NmeaMessage &msg) {
         [](const message::VesselHeading &m) { return serialize_vessel_heading(m); },
         [](const message::RateOfTurn &m) { return serialize_rate_of_turn(m); },
         [](const message::Heave &m) { return serialize_heave(m); },
-        [](const message::Position &m) { return serialize_position(m); });
+        [](const message::Position &m) { return serialize_position(m); },
+        [](const message::EnvironmentalParameters &m) {
+            return serialize_environmental_parameters(m);
+        });
 }
 } // namespace nmea
