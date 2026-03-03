@@ -230,6 +230,6 @@ TEST_F(MessageTest, ActualPressure) {
     ASSERT_NE(msg, nullptr);
     EXPECT_EQ(msg->sid, original.sid);
     EXPECT_EQ(msg->instance, original.instance);
-    EXPECT_EQ(std::to_underlying(msg->source), std::to_underlying(original.source));
+    EXPECT_EQ(msg->source, original.source);
     EXPECT_DOUBLE_EQ(msg->pressure, original.pressure);
 }

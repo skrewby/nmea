@@ -104,8 +104,8 @@ struct Position {
 struct EnvironmentalParameters {
     static constexpr uint8_t priority = 5;
     uint8_t sid;
-    TemperatureSource temperature_source;
-    HumiditySource humidity_source;
+    uint8_t temperature_source;
+    uint8_t humidity_source;
     double temperature;            // K
     double humidity;               // %
     uint16_t atmospheric_pressure; // Pa
@@ -116,7 +116,7 @@ struct ActualPressure {
     static constexpr uint8_t priority = 5;
     uint8_t sid;
     uint8_t instance;
-    PressureSource source;
+    uint8_t source;
     double pressure; // Pa
 };
 
@@ -215,8 +215,7 @@ struct std::formatter<nmea::message::EnvironmentalParameters> : std::formatter<s
         return std::formatter<std::string>::format(
             std::format("Environmental Parameters(SID={}, Temperature Source={}, Humidity "
                         "Source={}, Temperature={}, Humidity={}, Atmospheric Pressure={})",
-                        m.sid, std::to_underlying(m.temperature_source),
-                        std::to_underlying(m.humidity_source), m.temperature, m.humidity,
+                        m.sid, m.temperature_source, m.humidity_source, m.temperature, m.humidity,
                         m.atmospheric_pressure),
             ctx);
     }
@@ -226,7 +225,7 @@ template <> struct std::formatter<nmea::message::ActualPressure> : std::formatte
     auto format(const nmea::message::ActualPressure &m, auto &ctx) const {
         return std::formatter<std::string>::format(
             std::format("ActualPressure(SID={}, Instance={}, Source={}, Pressure={})", m.sid,
-                        m.instance, std::to_underlying(m.source), m.pressure),
+                        m.instance, m.source, m.pressure),
             ctx);
     }
 };

@@ -8,7 +8,7 @@ enum class DirectionReference : uint8_t {
     ERROR = 2,
 };
 
-enum class TemperatureSource : uint8_t {
+enum TemperatureSource : uint8_t {
     SEA_TEMPERATURE = 0,
     OUTSIDE_TEMPERATURE = 1,
     INSIDE_TEMPERATURE = 2,
@@ -27,12 +27,12 @@ enum class TemperatureSource : uint8_t {
     SHAFT_SEAL_TEMPERATURE = 15,
 };
 
-enum class HumiditySource : uint8_t {
+enum HumiditySource : uint8_t {
     INSIDE = 0,
     OUTSIDE = 1,
 };
 
-enum class PressureSource : uint8_t {
+enum PressureSource : uint8_t {
     ATMOSPHERIC = 0,
     WATER = 1,
     STEAM = 2,

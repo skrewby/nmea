@@ -221,8 +221,8 @@ parse_environmental_parameters(std::span<const uint8_t> data) {
     message::EnvironmentalParameters msg{};
 
     msg.sid = data[0];
-    msg.temperature_source = static_cast<TemperatureSource>(data[1] & 0x3F);
-    msg.humidity_source = static_cast<HumiditySource>(data[1] & 0xC0);
+    msg.temperature_source = data[1] & 0x3F;
+    msg.humidity_source = data[1] & 0xC0;
     msg.temperature = read_u16(data, 2) * 0.01;
     msg.humidity = read_i16(data, 4) * 0.004;
     msg.atmospheric_pressure = read_u16(data, 6);
@@ -235,8 +235,8 @@ serialize_environmental_parameters(const message::EnvironmentalParameters &msg) 
     std::vector<uint8_t> data(8, 0);
 
     data[0] = msg.sid;
-    data[1] = static_cast<uint8_t>(std::to_underlying(msg.temperature_source)) |
-              static_cast<uint8_t>(std::to_underlying(msg.humidity_source) << 6);
+    data[1] = static_cast<uint8_t>(msg.temperature_source) |
+              static_cast<uint8_t>(msg.humidity_source << 6);
     write_u16(data, 2, static_cast<uint16_t>(std::lround(msg.temperature / 0.01)));
     write_u16(data, 4, static_cast<uint16_t>(std::lround(msg.humidity / 0.004)));
     write_u16(data, 6, static_cast<uint16_t>(std::lround(msg.atmospheric_pressure)));
@@ -250,7 +250,7 @@ static message::ActualPressure parse_actual_pressure(std::span<const uint8_t> da
 
     msg.sid = data[0];
     msg.instance = data[1];
-    msg.source = static_cast<PressureSource>(data[2]);
+    msg.source = data[2];
     msg.pressure = read_i32(data, 3) * 0.1;
 
     return msg;
@@ -261,7 +261,7 @@ static SerializedMessage serialize_actual_pressure(const message::ActualPressure
 
     data[0] = msg.sid;
     data[1] = msg.instance;
-    data[2] = std::to_underlying(msg.source);
+    data[2] = msg.source;
     write_u32(data, 3, static_cast<uint32_t>(std::lround(msg.pressure / 0.1)));
 
     return {pgn::ACTUAL_PRESSURE, data};
