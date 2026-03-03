@@ -23,6 +23,7 @@ constexpr uint32_t COG_SOG = 129026;
 constexpr uint32_t TEMPERATURE = 130312;
 constexpr uint32_t VESSEL_SPEED = 130578;
 constexpr uint32_t ENVIRONMENTAL_PARAMETERS = 130311;
+constexpr uint32_t ACTUAL_PRESSURE = 130314;
 } // namespace pgn
 
 namespace message {
@@ -110,6 +111,15 @@ struct EnvironmentalParameters {
     uint16_t atmospheric_pressure; // Pa
 };
 
+// PGN130314 - Actual Pressure
+struct ActualPressure {
+    static constexpr uint8_t priority = 5;
+    uint8_t sid;
+    uint8_t instance;
+    PressureSource source;
+    double pressure; // Pa
+};
+
 template <typename T> constexpr uint8_t default_priority(const T &) { return T::priority; }
 
 } // namespace message
@@ -117,7 +127,7 @@ template <typename T> constexpr uint8_t default_priority(const T &) { return T::
 using NmeaMessage =
     std::variant<message::CogSog, message::Temperature, message::VesselSpeedComponents,
                  message::Attitude, message::VesselHeading, message::RateOfTurn, message::Heave,
-                 message::Position, message::EnvironmentalParameters>;
+                 message::Position, message::EnvironmentalParameters, message::ActualPressure>;
 
 struct SerializedMessage {
     uint32_t pgn;
@@ -208,6 +218,15 @@ struct std::formatter<nmea::message::EnvironmentalParameters> : std::formatter<s
                         m.sid, std::to_underlying(m.temperature_source),
                         std::to_underlying(m.humidity_source), m.temperature, m.humidity,
                         m.atmospheric_pressure),
+            ctx);
+    }
+};
+
+template <> struct std::formatter<nmea::message::ActualPressure> : std::formatter<std::string> {
+    auto format(const nmea::message::ActualPressure &m, auto &ctx) const {
+        return std::formatter<std::string>::format(
+            std::format("ActualPressure(SID={}, Instance={}, Source={}, Pressure={})", m.sid,
+                        m.instance, std::to_underlying(m.source), m.pressure),
             ctx);
     }
 };

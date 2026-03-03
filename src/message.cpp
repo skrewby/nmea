@@ -244,6 +244,29 @@ serialize_environmental_parameters(const message::EnvironmentalParameters &msg) 
     return {pgn::ENVIRONMENTAL_PARAMETERS, data};
 }
 
+// ================================== 130314 - Actual Pressure ================================== //
+static message::ActualPressure parse_actual_pressure(std::span<const uint8_t> data) {
+    message::ActualPressure msg{};
+
+    msg.sid = data[0];
+    msg.instance = data[1];
+    msg.source = static_cast<PressureSource>(data[2]);
+    msg.pressure = read_i32(data, 3) * 0.1;
+
+    return msg;
+}
+
+static SerializedMessage serialize_actual_pressure(const message::ActualPressure &msg) {
+    std::vector<uint8_t> data(8, 0);
+
+    data[0] = msg.sid;
+    data[1] = msg.instance;
+    data[2] = std::to_underlying(msg.source);
+    write_u32(data, 3, static_cast<uint32_t>(std::lround(msg.pressure / 0.1)));
+
+    return {pgn::ACTUAL_PRESSURE, data};
+}
+
 // ================================== Public API Implementation ================================= //
 std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8_t> data) {
     auto msg_pgn = (id >> 8) & 0x3FFFF;
@@ -266,6 +289,8 @@ std::expected<NmeaMessage, std::string> parse(uint32_t id, std::span<const uint8
         return parse_position(data);
     case pgn::ENVIRONMENTAL_PARAMETERS:
         return parse_environmental_parameters(data);
+    case pgn::ACTUAL_PRESSURE:
+        return parse_actual_pressure(data);
     default:
         return std::unexpected(std::format("PGN {} not supported", msg_pgn));
     }
@@ -285,6 +310,7 @@ SerializedMessage serialize(const NmeaMessage &msg) {
         [](const message::Position &m) { return serialize_position(m); },
         [](const message::EnvironmentalParameters &m) {
             return serialize_environmental_parameters(m);
-        });
+        },
+        [](const message::ActualPressure &m) { return serialize_actual_pressure(m); });
 }
 } // namespace nmea

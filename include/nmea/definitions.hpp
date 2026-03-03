@@ -32,6 +32,18 @@ enum class HumiditySource : uint8_t {
     OUTSIDE = 1,
 };
 
+enum class PressureSource : uint8_t {
+    ATMOSPHERIC = 0,
+    WATER = 1,
+    STEAM = 2,
+    COMPRESSED_AIR = 3,
+    HYDRAULIC = 4,
+    FILTER = 5,
+    ALTIMETER_SETTING = 6,
+    OIL = 7,
+    FUEL = 8,
+};
+
 enum class IndustryCode : uint8_t {
     GLOBAL = 0,
     HIGHWAY = 1,

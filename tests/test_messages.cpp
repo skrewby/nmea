@@ -213,3 +213,23 @@ TEST_F(MessageTest, EnvironmentalParameters) {
     EXPECT_DOUBLE_EQ(msg->humidity, original.humidity);
     EXPECT_EQ(msg->atmospheric_pressure, original.atmospheric_pressure);
 }
+
+TEST_F(MessageTest, ActualPressure) {
+    nmea::message::ActualPressure original{
+        .sid = 1,
+        .instance = 100,
+        .source = PressureSource::ATMOSPHERIC,
+        .pressure = 0x12345678 * 0.1,
+    };
+
+    ASSERT_TRUE(device->send(original).has_value());
+
+    auto result = listener->read();
+    ASSERT_TRUE(result.has_value());
+    auto *msg = std::get_if<nmea::message::ActualPressure>(&*result);
+    ASSERT_NE(msg, nullptr);
+    EXPECT_EQ(msg->sid, original.sid);
+    EXPECT_EQ(msg->instance, original.instance);
+    EXPECT_EQ(std::to_underlying(msg->source), std::to_underlying(original.source));
+    EXPECT_DOUBLE_EQ(msg->pressure, original.pressure);
+}
